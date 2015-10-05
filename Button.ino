@@ -1,13 +1,11 @@
 #include <RCSwitch.h>
 
-RCSwitch mySwitch = RCSwitch();
+RCSwitch rc = RCSwitch();
 
+int channel = 1;
 
-const int buttonPin = 8;
-const int red = 11;
-const int green = 10;
-
-
+// Button
+int buttonPin = 8;
 int ledState = HIGH;
 int buttonState;
 int lastButtonState = LOW;
@@ -16,28 +14,29 @@ long lastDebounceTime = 0;
 long debounceDelay = 50;
 
 void setup() {
-  pinMode(buttonPin, INPUT);
-  pinMode(red, OUTPUT);
-  pinMode(green, OUTPUT);
-
-  // pin 10
-  mySwitch.enableTransmit(13);
-
-  // Optional set pulse length.
-  // mySwitch.setPulseLength(320);
+  // Transmitter
+  rc.enableTransmit(9);
+  rc.setPulseLength(320);  
   
-  // Optional set protocol (default is 1, will work for most outlets)
-  // mySwitch.setProtocol(2);
-  
-  // Optional set number of transmission repetitions.
-  mySwitch.setRepeatTransmit(15);
+  Serial.begin(9600);
 
-  // set initial LED state
-  digitalWrite(red, ledState);
+  pinMode(buttonPin, INPUT_PULLUP);  
+}
+
+void sendTrigger() {
+  Serial.println("Sending");  
+  digitalWrite(13, HIGH);
+  rc.switchOn(channel, 3);
+  delay(200);
+  digitalWrite(13, LOW);
+  rc.switchOff(channel, 3);
 }
 
 void loop() {
+
+
   int reading = digitalRead(buttonPin);
+  Serial.println(reading);
 
   // If the switch changed, due to noise or pressing:
   if (reading != lastButtonState) {
@@ -46,32 +45,11 @@ void loop() {
   }
 
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    // whatever the reading is at, it's been there for longer
-    // than the debounce delay, so take it as the actual current state:
+    if(!reading) {
 
-    // if the button state has changed:
-    if (reading != buttonState) {
-      buttonState = reading;
-
-      // only toggle the LED if the new button state is HIGH
-      if (buttonState == HIGH) {
-        ledState = !ledState;
-      }
-
-      if(ledState == HIGH) {
-        digitalWrite(red, HIGH);
-        digitalWrite(green, LOW);  
-        
-        mySwitch.switchOff("11111", "00010");
-      } else {
-        digitalWrite(red, LOW);
-        digitalWrite(green, HIGH);      
-        
-        mySwitch.switchOn("11111", "00010");
-      }
+      sendTrigger();  
     }
   }
 
-  lastButtonState = reading;
+  lastButtonState = reading;  
 }
-
